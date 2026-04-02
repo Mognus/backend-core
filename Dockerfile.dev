@@ -1,0 +1,29 @@
+FROM golang:1.26-alpine
+
+# Install Air for hot reload
+RUN go install github.com/air-verse/air@latest
+
+WORKDIR /backend
+
+# Copy local replace directive targets before go mod download —
+# go.mod references auth-service and go-grpc-crud via replace directives
+# pointing to relative paths, which must exist when Docker resolves them.
+COPY services/auth-service/ /services/auth-service/
+COPY services/gallery-service/ /services/gallery-service/
+COPY services/cms-service/ /services/cms-service/
+COPY services/lib/ /services/lib/
+
+# Copy go mod files
+COPY backend/go.mod backend/go.sum* ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy backend source code
+COPY backend/ .
+
+# Expose port
+EXPOSE 8080
+
+# Run with Air
+CMD ["air"]
