@@ -4,16 +4,9 @@ go 1.26.1
 
 require (
 	auth-service v0.0.0
-	cms-service v0.0.0
-	gallery-service v0.0.0
 )
 
-// Local dev only — in production, services are separate modules.
 replace auth-service => ../services/auth-service
-
-replace gallery-service => ../services/gallery-service
-
-replace cms-service => ../services/cms-service
 
 replace github.com/Mognus/go-grpc-crud => ../services/lib
 

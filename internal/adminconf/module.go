@@ -3,15 +3,14 @@ package adminconf
 import (
 	"sort"
 
-	"github.com/gofiber/fiber/v2"
-
+	authclient "auth-service/client"
 	libcrud "github.com/Mognus/go-grpc-crud/crud"
+	"github.com/gofiber/fiber/v2"
 )
 
 type Module struct {
-	providers       map[string]libcrud.GRPCProvider
-	jwtMiddleware   fiber.Handler
-	adminMiddleware fiber.Handler
+	auth      *authclient.Config
+	providers map[string]libcrud.GRPCProvider
 }
 
 type modelInfo struct {
@@ -19,18 +18,11 @@ type modelInfo struct {
 	DisplayName string `json:"displayName"`
 }
 
-func New() *Module {
+func New(auth *authclient.Config) *Module {
 	return &Module{
+		auth:      auth,
 		providers: make(map[string]libcrud.GRPCProvider),
 	}
-}
-
-func (m *Module) SetJWTMiddleware(middleware fiber.Handler) {
-	m.jwtMiddleware = middleware
-}
-
-func (m *Module) SetAdminMiddleware(middleware fiber.Handler) {
-	m.adminMiddleware = middleware
 }
 
 func (m *Module) RegisterCRUD(provider libcrud.GRPCProvider) {
@@ -48,13 +40,8 @@ func (m *Module) getProvider(c *fiber.Ctx) (libcrud.GRPCProvider, bool) {
 
 func (m *Module) Mount(router fiber.Router) {
 	admin := router.Group("/admin")
-
-	if m.jwtMiddleware != nil {
-		admin.Use(m.jwtMiddleware)
-	}
-	if m.adminMiddleware != nil {
-		admin.Use(m.adminMiddleware)
-	}
+	admin.Use(m.auth.JWTMiddleware())
+	admin.Use(m.auth.RequireAdmin)
 
 	api := admin.Group("/api")
 
