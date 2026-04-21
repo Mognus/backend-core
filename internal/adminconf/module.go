@@ -3,16 +3,14 @@ package adminconf
 import (
 	"sort"
 
-	authclient "auth-service/client"
-	libcrud "github.com/Mognus/go-grpc-crud/crud"
+	"github.com/Mognus/go-grpc-crud/crud"
 	"github.com/gofiber/fiber/v2"
 )
 
 type Module struct {
-	auth      *authclient.Config
+	auth      AdminAuth
 	api       fiber.Router
-	providers map[string]libcrud.GRPCProvider
-	services  []ProviderService
+	providers map[string]crud.GRPCProvider
 }
 
 type modelInfo struct {
@@ -21,13 +19,18 @@ type modelInfo struct {
 }
 
 type ProviderService interface {
-	Providers() []libcrud.GRPCProvider
+	Providers() []crud.GRPCProvider
 }
 
-func New(auth *authclient.Config, router fiber.Router) *Module {
+type AdminAuth interface {
+	JWTMiddleware() fiber.Handler
+	RequireAdmin(*fiber.Ctx) error
+}
+
+func New(auth AdminAuth, router fiber.Router) *Module {
 	module := &Module{
 		auth:      auth,
-		providers: make(map[string]libcrud.GRPCProvider),
+		providers: make(map[string]crud.GRPCProvider),
 	}
 	admin := router.Group("/admin")
 	admin.Use(module.auth.JWTMiddleware())
@@ -41,7 +44,7 @@ func New(auth *authclient.Config, router fiber.Router) *Module {
 	return module
 }
 
-func (m *Module) RegisterCRUD(provider libcrud.GRPCProvider) {
+func (m *Module) RegisterCRUD(provider crud.GRPCProvider) {
 	modelName := provider.GetModelName()
 	if _, exists := m.providers[modelName]; exists {
 		return
@@ -53,8 +56,6 @@ func (m *Module) RegisterCRUD(provider libcrud.GRPCProvider) {
 }
 
 func (m *Module) RegisterProviders(services ...ProviderService) {
-	m.services = append(m.services, services...)
-
 	for _, service := range services {
 		for _, provider := range service.Providers() {
 			m.RegisterCRUD(provider)
@@ -62,7 +63,7 @@ func (m *Module) RegisterProviders(services ...ProviderService) {
 	}
 }
 
-func (m *Module) mountProviderRoutes(modelName string, provider libcrud.GRPCProvider) {
+func (m *Module) mountProviderRoutes(modelName string, provider crud.GRPCProvider) {
 	basePath := "/" + modelName
 
 	m.api.Get(basePath, provider.HandleList)
