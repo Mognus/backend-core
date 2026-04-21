@@ -10,6 +10,7 @@ import (
 
 type Module struct {
 	auth      *authclient.Config
+	api       fiber.Router
 	providers map[string]libcrud.GRPCProvider
 	services  []ProviderService
 }
@@ -31,10 +32,21 @@ func New(auth *authclient.Config) *Module {
 }
 
 func (m *Module) RegisterCRUD(provider libcrud.GRPCProvider) {
-	m.providers[provider.GetModelName()] = provider
+	modelName := provider.GetModelName()
+	if _, exists := m.providers[modelName]; exists {
+		return
+	}
+
+	m.providers[modelName] = provider
+	// Each provider mounts its own concrete admin routes under /admin/api/<model>.
+	m.mountProviderRoutes(modelName, provider)
 }
 
 func (m *Module) RegisterProviders(services ...ProviderService) {
+	if m.api == nil {
+		panic("admin module must be mounted before registering providers")
+	}
+
 	m.services = append(m.services, services...)
 
 	for _, service := range services {
@@ -44,29 +56,26 @@ func (m *Module) RegisterProviders(services ...ProviderService) {
 	}
 }
 
-func (m *Module) getProvider(c *fiber.Ctx) (libcrud.GRPCProvider, bool) {
-	modelName := c.Params("model")
-	provider, exists := m.providers[modelName]
-	if !exists {
-		return nil, false
-	}
-	return provider, true
-}
-
 func (m *Module) Mount(router fiber.Router) {
 	admin := router.Group("/admin")
 	admin.Use(m.auth.JWTMiddleware())
 	admin.Use(m.auth.RequireAdmin)
 
-	api := admin.Group("/api")
+	m.api = admin.Group("/api")
 
-	api.Get("/models", m.GetModels)
-	api.Get("/:model", m.List)
-	api.Get("/:model/schema", m.GetSchema)
-	api.Get("/:model/:id", m.Get)
-	api.Post("/:model", m.Create)
-	api.Put("/:model/:id", m.Update)
-	api.Delete("/:model/:id", m.Delete)
+	// Shared admin endpoints stay here; CRUD routes are mounted during provider registration.
+	m.api.Get("/models", m.GetModels)
+}
+
+func (m *Module) mountProviderRoutes(modelName string, provider libcrud.GRPCProvider) {
+	basePath := "/" + modelName
+
+	m.api.Get(basePath, provider.HandleList)
+	m.api.Post(basePath, provider.HandleCreate)
+	m.api.Get(basePath+"/schema", provider.HandleSchema)
+	m.api.Get(basePath+"/:id", provider.HandleGet)
+	m.api.Put(basePath+"/:id", provider.HandleUpdate)
+	m.api.Delete(basePath+"/:id", provider.HandleDelete)
 }
 
 func (m *Module) GetModels(c *fiber.Ctx) error {
@@ -90,52 +99,4 @@ func (m *Module) GetModels(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"models": models,
 	})
-}
-
-func (m *Module) GetSchema(c *fiber.Ctx) error {
-	provider, exists := m.getProvider(c)
-	if !exists {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Model not found"})
-	}
-	return provider.HandleSchema(c)
-}
-
-func (m *Module) List(c *fiber.Ctx) error {
-	provider, exists := m.getProvider(c)
-	if !exists {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Model not found"})
-	}
-	return provider.HandleList(c)
-}
-
-func (m *Module) Get(c *fiber.Ctx) error {
-	provider, exists := m.getProvider(c)
-	if !exists {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Model not found"})
-	}
-	return provider.HandleGet(c)
-}
-
-func (m *Module) Create(c *fiber.Ctx) error {
-	provider, exists := m.getProvider(c)
-	if !exists {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Model not found"})
-	}
-	return provider.HandleCreate(c)
-}
-
-func (m *Module) Update(c *fiber.Ctx) error {
-	provider, exists := m.getProvider(c)
-	if !exists {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Model not found"})
-	}
-	return provider.HandleUpdate(c)
-}
-
-func (m *Module) Delete(c *fiber.Ctx) error {
-	provider, exists := m.getProvider(c)
-	if !exists {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Model not found"})
-	}
-	return provider.HandleDelete(c)
 }

@@ -35,27 +35,26 @@ GET /auth/me
 GET /admin/api/users
   → JWTMiddleware()       (registered on /admin/* group by adminconf)
   → RequireAdmin          checks claims["role"] == "admin"
-  → adminModule.List()    looks up UserProvider from providers map
   → UserProvider.HandleList() → gRPC → auth-service
 ```
 
 ### Service Registry
 
-The service registry is now a pure lifecycle container. Startup wiring mounts admin, registers HTTP routes, and attaches CRUD providers explicitly:
+The service registry mounts service routes when services are registered and keeps lifecycle handling in one place. Admin wiring stays in `adminconf`:
 
 ```
-serviceregistry.New()
+serviceregistry.New(router)
   authSvc, _ := authclient.New(...)
   adminconf.New(authSvc.Config)    → admin panel initialized with auth config
   admin.Mount(router)              → /admin/* routes registered
-  registerServiceRuntime(router, admin, ...svc) → one or many services get routes + CRUD providers
-  services.Add(...svc)                       → one or many services enter lifecycle + health names
+  admin.RegisterProviders(...svc)  → CRUD providers mount their own /admin/api/<model> routes
+  services.RegisterServices(...svc) → one or many services get routes + lifecycle + health names
 
-  registerServiceRuntime(router, admin, authSvc, blogSvc, ...)
-  services.Add(authSvc, blogSvc, ...)
+  admin.RegisterProviders(authSvc, blogSvc, ...)
+  services.RegisterServices(authSvc, blogSvc, ...)
 ```
 
-Admin providers are still looked up dynamically at request time; the difference is that the registry no longer knows about Fiber, auth config, or admin wiring.
+Admin CRUD routes are mounted per model namespace during provider registration, while the service registry handles service routes and lifecycle.
 
 ### Protecting routes
 
@@ -87,8 +86,8 @@ cmd/server/
   main.go      ← startup: Redis, service registry, health route, listen
   server.go    ← newApp(), errorHandler(), getEnv(), isEnabled()
 internal/
-  adminconf/   ← admin panel: JWT + admin middleware, dynamic CRUD routes
-  registry/    ← pure service registry: Add, Close, Names
+  adminconf/   ← admin panel: JWT + admin middleware, provider-mounted CRUD routes
+  registry/    ← service registry: RegisterServices, Close, Names
 ```
 
 ## Adding a new service
@@ -104,8 +103,8 @@ admin.Mount(api)
 if isEnabled("blog") {
     blogSvc, err := blogclient.New(getEnv("BLOG_SERVICE_ADDR", "localhost:50052"), authSvc.Config)
     if err != nil { log.Fatalf(...) }
-    registerServiceRuntime(api, admin, blogSvc)
-    services.Add(blogSvc)
+    admin.RegisterProviders(blogSvc)
+    services.RegisterServices(blogSvc)
 }
 ```
 5. Set `ENABLED_SERVICES=blog` in `.env`

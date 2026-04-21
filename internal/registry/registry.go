@@ -25,6 +25,7 @@ func (r *ServiceRegistry) RegisterServices(services ...Service) {
 
 	for _, service := range services {
 		if routableService, ok := service.(RoutableService); ok {
+			// Routes are wired when a service is registered; the registry also tracks shutdown and names.
 			routableService.RegisterRoutes(r.router)
 		}
 	}
