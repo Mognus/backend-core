@@ -5,27 +5,28 @@ import (
 
 	authclient "auth-service/client"
 	"template/internal/admin"
+	"template/internal/config"
 	"template/internal/services"
 
 	"github.com/gofiber/fiber/v2"
 	fiberredis "github.com/gofiber/storage/redis/v2"
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using system environment")
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
 	}
 
 	redisStorage := fiberredis.New(fiberredis.Config{
-		URL: getEnv("REDIS_URL", "redis://localhost:6379"),
+		URL: cfg.Redis.URL,
 	})
 
-	app := newApp()
+	app := newApp(cfg)
 	api := app.Group("/api")
 	serviceRegistry := services.New(api)
 
-	loadServices(api, serviceRegistry, redisStorage)
+	loadServices(cfg, api, serviceRegistry, redisStorage)
 	defer serviceRegistry.Close()
 
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -35,17 +36,17 @@ func main() {
 		})
 	})
 
-	addr := getEnv("HOST", "0.0.0.0") + ":" + getEnv("PORT", "8080")
+	addr := cfg.Server.Host + ":" + cfg.Server.Port
 	log.Printf("Server starting on http://%s", addr)
 	if err := app.Listen(addr); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func loadServices(router fiber.Router, serviceRegistry *services.ServiceRegistry, storage fiber.Storage) {
+func loadServices(cfg *config.Config, router fiber.Router, serviceRegistry *services.ServiceRegistry, storage fiber.Storage) {
 	authSvc, err := authclient.New(
-		getEnv("AUTH_SERVICE_ADDR", "localhost:50051"),
-		getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
+		cfg.Auth.ServiceAddr,
+		cfg.Auth.JWTSecret,
 		storage,
 	)
 	if err != nil {

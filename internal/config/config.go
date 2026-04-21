@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -11,6 +12,9 @@ type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	CORS     CORSConfig
+	Redis    RedisConfig
+	Auth     AuthConfig
+	Services ServicesConfig
 }
 
 // ServerConfig holds server-related configuration
@@ -24,6 +28,22 @@ type CORSConfig struct {
 	AllowOrigins string
 	AllowMethods string
 	AllowHeaders string
+}
+
+// RedisConfig holds Redis-related configuration
+type RedisConfig struct {
+	URL string
+}
+
+// AuthConfig holds auth-service related configuration
+type AuthConfig struct {
+	ServiceAddr string
+	JWTSecret   string
+}
+
+// ServicesConfig holds service loading configuration
+type ServicesConfig struct {
+	Enabled []string
 }
 
 // DatabaseConfig holds database-related configuration
@@ -57,6 +77,16 @@ func Load() (*Config, error) {
 			AllowMethods: GetEnv("CORS_ALLOW_METHODS", "GET,POST,PUT,DELETE,OPTIONS"),
 			AllowHeaders: GetEnv("CORS_ALLOW_HEADERS", "Origin,Content-Type,Accept,Authorization"),
 		},
+		Redis: RedisConfig{
+			URL: GetEnv("REDIS_URL", "redis://localhost:6379"),
+		},
+		Auth: AuthConfig{
+			ServiceAddr: GetEnv("AUTH_SERVICE_ADDR", "localhost:50051"),
+			JWTSecret:   GetEnv("JWT_SECRET", "your-secret-key-change-in-production"),
+		},
+		Services: ServicesConfig{
+			Enabled: splitCSV(GetEnv("ENABLED_SERVICES", "")),
+		},
 	}
 
 	return cfg, nil
@@ -73,4 +103,22 @@ func GetEnv(key, fallback string) string {
 // Get is a convenience method to get config value with fallback
 func (c *Config) Get(key, fallback string) string {
 	return GetEnv(key, fallback)
+}
+
+func splitCSV(value string) []string {
+	if value == "" {
+		return nil
+	}
+
+	parts := strings.Split(value, ",")
+	values := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		values = append(values, part)
+	}
+
+	return values
 }

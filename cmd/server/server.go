@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	stderrors "errors"
 	"log/slog"
-	"os"
-	"strings"
+	"template/internal/config"
 
 	apperrors "github.com/Mognus/go-grpc-crud/errors"
 
@@ -15,7 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 )
 
-func newApp() *fiber.App {
+func newApp(cfg *config.Config) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: errorHandler,
 		BodyLimit:    50 * 1024 * 1024,
@@ -23,7 +22,7 @@ func newApp() *fiber.App {
 	app.Use(recover.New(recover.Config{EnableStackTrace: true}))
 	app.Use(logger.New())
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     getEnv("CORS_ALLOW_ORIGINS", "http://localhost:3000"),
+		AllowOrigins:     cfg.CORS.AllowOrigins,
 		AllowCredentials: true,
 	}))
 	app.Static("/uploads", "./uploads")
@@ -59,24 +58,4 @@ func errorHandler(c *fiber.Ctx, err error) error {
 	body, _ := json.Marshal(problem)
 	c.Set(fiber.HeaderContentType, "application/problem+json")
 	return c.Status(problem.Status).Send(body)
-}
-
-func getEnv(key, fallback string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return fallback
-}
-
-func isEnabled(service string) bool {
-	enabled := os.Getenv("ENABLED_SERVICES")
-	if enabled == "" {
-		return false
-	}
-	for _, s := range strings.Split(enabled, ",") {
-		if strings.TrimSpace(s) == service {
-			return true
-		}
-	}
-	return false
 }
