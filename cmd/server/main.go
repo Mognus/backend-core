@@ -4,8 +4,8 @@ import (
 	"log"
 
 	authclient "auth-service/client"
-	"template/internal/adminconf"
-	serviceregistry "template/internal/registry"
+	"template/internal/admin"
+	"template/internal/services"
 
 	"github.com/gofiber/fiber/v2"
 	fiberredis "github.com/gofiber/storage/redis/v2"
@@ -23,15 +23,15 @@ func main() {
 
 	app := newApp()
 	api := app.Group("/api")
-	services := serviceregistry.New(api)
+	serviceRegistry := services.New(api)
 
-	loadServices(api, services, redisStorage)
-	defer services.Close()
+	loadServices(api, serviceRegistry, redisStorage)
+	defer serviceRegistry.Close()
 
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"status":  "ok",
-			"modules": services.Names(),
+			"modules": serviceRegistry.Names(),
 		})
 	})
 
@@ -42,7 +42,7 @@ func main() {
 	}
 }
 
-func loadServices(router fiber.Router, services *serviceregistry.ServiceRegistry, storage fiber.Storage) {
+func loadServices(router fiber.Router, serviceRegistry *services.ServiceRegistry, storage fiber.Storage) {
 	authSvc, err := authclient.New(
 		getEnv("AUTH_SERVICE_ADDR", "localhost:50051"),
 		getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
@@ -52,7 +52,7 @@ func loadServices(router fiber.Router, services *serviceregistry.ServiceRegistry
 		log.Fatalf("Failed to connect to auth-service: %v", err)
 	}
 
-	admin := adminconf.New(authSvc.Config, router)
-	admin.RegisterProviders(authSvc)
-	services.RegisterServices(authSvc)
+	adminRegistry := admin.New(authSvc.Config, router)
+	adminRegistry.RegisterProviders(authSvc)
+	serviceRegistry.RegisterServices(authSvc)
 }

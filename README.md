@@ -15,7 +15,7 @@ Go Fiber API Gateway. Single HTTP entry point — validates JWTs, proxies to gRP
 ```
 authclient.New(addr, secret, redis)
   └─ *Config{jwtSecret, *Middleware}
-       ├─ adminconf.New(config, router) → admin panel uses JWT + admin check
+       ├─ admin.New(config, router) → admin panel uses JWT + admin check
        └─ blogclient.New(addr, config) → blog service uses same middleware on its routes
 ```
 
@@ -33,24 +33,24 @@ GET /auth/me
   → authHandler.me()      reads userID via GetUserIDFromContext(c)
 
 GET /admin/api/users
-  → JWTMiddleware()       (registered on /admin/* group by adminconf)
+  → JWTMiddleware()       (registered on /admin/* group by admin)
   → RequireAdmin          checks claims["role"] == "admin"
   → UserProvider.HandleList() → gRPC → auth-service
 ```
 
 ### Service Registry
 
-The service registry mounts service routes when services are registered and keeps lifecycle handling in one place. Admin wiring stays in `adminconf`:
+The service registry mounts service routes when services are registered and keeps lifecycle handling in one place. Admin wiring stays in `admin`:
 
 ```
-serviceregistry.New(router)
+services.New(router)
   authSvc, _ := authclient.New(...)
-  adminconf.New(authSvc.Config, router) → /admin/* routes registered
+  admin.New(authSvc.Config, router) → /admin/* routes registered
   admin.RegisterProviders(...svc)  → CRUD providers mount their own /admin/api/<model> routes
-  services.RegisterServices(...svc) → one or many services get routes + lifecycle + health names
+  serviceRegistry.RegisterServices(...svc) → one or many services get routes + lifecycle + health names
 
   admin.RegisterProviders(authSvc, blogSvc, ...)
-  services.RegisterServices(authSvc, blogSvc, ...)
+  serviceRegistry.RegisterServices(authSvc, blogSvc, ...)
 ```
 
 Admin CRUD routes are mounted per model namespace during provider registration, while the service registry handles service routes and lifecycle.
@@ -85,8 +85,8 @@ cmd/server/
   main.go      ← startup: Redis, service registry, health route, listen
   server.go    ← newApp(), errorHandler(), getEnv(), isEnabled()
 internal/
-  adminconf/   ← admin panel: JWT + admin middleware, provider-mounted CRUD routes
-  registry/    ← service registry: RegisterServices, Close, Names
+  admin/       ← admin panel: JWT + admin middleware, provider-mounted CRUD routes
+  services/    ← service registry: RegisterServices, Close, Names
 ```
 
 ## Adding a new service
@@ -96,13 +96,13 @@ internal/
 3. Optionally implement `Providers()` if the service contributes admin CRUD providers
 4. Add to `loadServices()` in `cmd/server/main.go`:
 ```go
-admin := adminconf.New(authSvc.Config, api)
+admin := admin.New(authSvc.Config, api)
 
 if isEnabled("blog") {
     blogSvc, err := blogclient.New(getEnv("BLOG_SERVICE_ADDR", "localhost:50052"), authSvc.Config)
     if err != nil { log.Fatalf(...) }
     admin.RegisterProviders(blogSvc)
-    services.RegisterServices(blogSvc)
+    serviceRegistry.RegisterServices(blogSvc)
 }
 ```
 5. Set `ENABLED_SERVICES=blog` in `.env`
