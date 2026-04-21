@@ -35,7 +35,7 @@ func New(auth AdminAuth, router fiber.Router) *AdminRegistry {
 	return adminRegistry
 }
 
-func (a *AdminRegistry) RegisterCRUD(provider crud.GRPCProvider) {
+func (a *AdminRegistry) registerCRUD(provider crud.GRPCProvider) {
 	modelName := provider.GetModelName()
 	if _, exists := a.providers[modelName]; exists {
 		return
@@ -49,7 +49,7 @@ func (a *AdminRegistry) RegisterCRUD(provider crud.GRPCProvider) {
 func (a *AdminRegistry) RegisterProviders(services ...ProviderService) {
 	for _, service := range services {
 		for _, provider := range service.Providers() {
-			a.RegisterCRUD(provider)
+			a.registerCRUD(provider)
 		}
 	}
 }

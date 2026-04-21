@@ -21,7 +21,8 @@ type Runtime interface {
 	Router() fiber.Router
 	Storage() fiber.Storage
 	Services() ServiceRegistrar
-	Providers() ProviderRegistrar
+	ProviderRegistrar() ProviderRegistrar
+	SetProviderRegistrar(ProviderRegistrar)
 }
 
 type Loader interface {

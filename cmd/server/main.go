@@ -3,8 +3,7 @@ package main
 import (
 	"log"
 
-	authclient "auth-service/client"
-	"template/internal/admin"
+	"template/internal/bootstrap"
 	"template/internal/config"
 	"template/internal/services"
 
@@ -26,7 +25,10 @@ func main() {
 	api := app.Group("/api")
 	serviceRegistry := services.New(api)
 
-	loadServices(cfg, api, serviceRegistry, redisStorage)
+	runtime := bootstrap.NewRuntime(cfg, api, redisStorage, serviceRegistry)
+	if err := runtime.Load(bootstrap.NewAuthLoader()); err != nil {
+		log.Fatalf("Failed to load services: %v", err)
+	}
 	defer serviceRegistry.Close()
 
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -41,19 +43,4 @@ func main() {
 	if err := app.Listen(addr); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func loadServices(cfg *config.Config, router fiber.Router, serviceRegistry *services.ServiceRegistry, storage fiber.Storage) {
-	authSvc, err := authclient.New(
-		cfg.Auth.ServiceAddr,
-		cfg.Auth.JWTSecret,
-		storage,
-	)
-	if err != nil {
-		log.Fatalf("Failed to connect to auth-service: %v", err)
-	}
-
-	adminRegistry := admin.New(authSvc.Config, router)
-	adminRegistry.RegisterProviders(authSvc)
-	serviceRegistry.RegisterServices(authSvc)
 }
