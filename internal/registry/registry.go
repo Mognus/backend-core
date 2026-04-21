@@ -20,14 +20,14 @@ func New(router fiber.Router) *ServiceRegistry {
 	return &ServiceRegistry{router: router}
 }
 
-func (r *ServiceRegistry) Add(services ...Service) {
+func (r *ServiceRegistry) RegisterServices(services ...Service) {
+	r.services = append(r.services, services...)
+
 	for _, service := range services {
 		if routableService, ok := service.(RoutableService); ok {
 			routableService.RegisterRoutes(r.router)
 		}
 	}
-
-	r.services = append(r.services, services...)
 }
 
 func (r *ServiceRegistry) Close() {

@@ -55,5 +55,5 @@ func loadServices(router fiber.Router, services *serviceregistry.ServiceRegistry
 	admin := adminconf.New(authSvc.Config)
 	admin.Mount(router)
 	admin.RegisterProviders(authSvc)
-	services.Add(authSvc)
+	services.RegisterServices(authSvc)
 }
