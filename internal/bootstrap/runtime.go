@@ -23,6 +23,16 @@ func NewRuntime(cfg *config.Config, router fiber.Router, storage fiber.Storage, 
 	}
 }
 
+func (r *AppRuntime) Load(loaders ...Loader) error {
+	for _, loader := range loaders {
+		if err := loader.Load(r); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (r *AppRuntime) Config() *config.Config {
 	return r.config
 }
@@ -45,14 +55,4 @@ func (r *AppRuntime) ProviderRegistrar() ProviderRegistrar {
 
 func (r *AppRuntime) SetProviderRegistrar(providers ProviderRegistrar) {
 	r.providers = providers
-}
-
-func (r *AppRuntime) Load(loaders ...Loader) error {
-	for _, loader := range loaders {
-		if err := loader.Load(r); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
