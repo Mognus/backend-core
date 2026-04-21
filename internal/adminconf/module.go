@@ -82,7 +82,7 @@ func (m *Module) GetSchema(c *fiber.Ctx) error {
 	if !exists {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Model not found"})
 	}
-	return provider.SchemaHandler()(c)
+	return provider.HandleSchema(c)
 }
 
 func (m *Module) List(c *fiber.Ctx) error {
@@ -90,7 +90,7 @@ func (m *Module) List(c *fiber.Ctx) error {
 	if !exists {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Model not found"})
 	}
-	return provider.ListHandler()(c)
+	return provider.HandleList(c)
 }
 
 func (m *Module) Get(c *fiber.Ctx) error {
@@ -98,7 +98,7 @@ func (m *Module) Get(c *fiber.Ctx) error {
 	if !exists {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Model not found"})
 	}
-	return provider.GetHandler()(c)
+	return provider.HandleGet(c)
 }
 
 func (m *Module) Create(c *fiber.Ctx) error {
@@ -106,7 +106,7 @@ func (m *Module) Create(c *fiber.Ctx) error {
 	if !exists {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Model not found"})
 	}
-	return provider.CreateHandler()(c)
+	return provider.HandleCreate(c)
 }
 
 func (m *Module) Update(c *fiber.Ctx) error {
@@ -114,7 +114,7 @@ func (m *Module) Update(c *fiber.Ctx) error {
 	if !exists {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Model not found"})
 	}
-	return provider.UpdateHandler()(c)
+	return provider.HandleUpdate(c)
 }
 
 func (m *Module) Delete(c *fiber.Ctx) error {
@@ -122,5 +122,5 @@ func (m *Module) Delete(c *fiber.Ctx) error {
 	if !exists {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Model not found"})
 	}
-	return provider.DeleteHandler()(c)
+	return provider.HandleDelete(c)
 }

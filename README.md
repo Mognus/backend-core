@@ -36,7 +36,7 @@ GET /admin/api/users
   → JWTMiddleware()       (registered on /admin/* group by adminconf)
   → RequireAdmin          checks claims["role"] == "admin"
   → adminModule.List()    looks up UserProvider from providers map
-  → UserProvider.ListHandler() → gRPC → auth-service
+  → UserProvider.HandleList() → gRPC → auth-service
 ```
 
 ### Registry
