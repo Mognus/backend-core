@@ -52,8 +52,7 @@ func loadServices(router fiber.Router, services *serviceregistry.ServiceRegistry
 		log.Fatalf("Failed to connect to auth-service: %v", err)
 	}
 
-	admin := adminconf.New(authSvc.Config)
-	admin.Mount(router)
+	admin := adminconf.New(authSvc.Config, router)
 	admin.RegisterProviders(authSvc)
 	services.RegisterServices(authSvc)
 }

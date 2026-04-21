@@ -24,11 +24,21 @@ type ProviderService interface {
 	Providers() []libcrud.GRPCProvider
 }
 
-func New(auth *authclient.Config) *Module {
-	return &Module{
+func New(auth *authclient.Config, router fiber.Router) *Module {
+	module := &Module{
 		auth:      auth,
 		providers: make(map[string]libcrud.GRPCProvider),
 	}
+	admin := router.Group("/admin")
+	admin.Use(module.auth.JWTMiddleware())
+	admin.Use(module.auth.RequireAdmin)
+
+	module.api = admin.Group("/api")
+
+	// Shared admin endpoints stay here; CRUD routes are mounted during provider registration.
+	module.api.Get("/models", module.GetModels)
+
+	return module
 }
 
 func (m *Module) RegisterCRUD(provider libcrud.GRPCProvider) {
@@ -43,10 +53,6 @@ func (m *Module) RegisterCRUD(provider libcrud.GRPCProvider) {
 }
 
 func (m *Module) RegisterProviders(services ...ProviderService) {
-	if m.api == nil {
-		panic("admin module must be mounted before registering providers")
-	}
-
 	m.services = append(m.services, services...)
 
 	for _, service := range services {
@@ -54,17 +60,6 @@ func (m *Module) RegisterProviders(services ...ProviderService) {
 			m.RegisterCRUD(provider)
 		}
 	}
-}
-
-func (m *Module) Mount(router fiber.Router) {
-	admin := router.Group("/admin")
-	admin.Use(m.auth.JWTMiddleware())
-	admin.Use(m.auth.RequireAdmin)
-
-	m.api = admin.Group("/api")
-
-	// Shared admin endpoints stay here; CRUD routes are mounted during provider registration.
-	m.api.Get("/models", m.GetModels)
 }
 
 func (m *Module) mountProviderRoutes(modelName string, provider libcrud.GRPCProvider) {

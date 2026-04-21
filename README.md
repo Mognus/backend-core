@@ -15,7 +15,7 @@ Go Fiber API Gateway. Single HTTP entry point — validates JWTs, proxies to gRP
 ```
 authclient.New(addr, secret, redis)
   └─ *Config{jwtSecret, *Middleware}
-       ├─ adminconf.New(config)     → admin panel uses JWT + admin check
+       ├─ adminconf.New(config, router) → admin panel uses JWT + admin check
        └─ blogclient.New(addr, config) → blog service uses same middleware on its routes
 ```
 
@@ -45,8 +45,7 @@ The service registry mounts service routes when services are registered and keep
 ```
 serviceregistry.New(router)
   authSvc, _ := authclient.New(...)
-  adminconf.New(authSvc.Config)    → admin panel initialized with auth config
-  admin.Mount(router)              → /admin/* routes registered
+  adminconf.New(authSvc.Config, router) → /admin/* routes registered
   admin.RegisterProviders(...svc)  → CRUD providers mount their own /admin/api/<model> routes
   services.RegisterServices(...svc) → one or many services get routes + lifecycle + health names
 
@@ -97,8 +96,7 @@ internal/
 3. Optionally implement `Providers()` if the service contributes admin CRUD providers
 4. Add to `loadServices()` in `cmd/server/main.go`:
 ```go
-admin := adminconf.New(authSvc.Config)
-admin.Mount(api)
+admin := adminconf.New(authSvc.Config, api)
 
 if isEnabled("blog") {
     blogSvc, err := blogclient.New(getEnv("BLOG_SERVICE_ADDR", "localhost:50052"), authSvc.Config)
