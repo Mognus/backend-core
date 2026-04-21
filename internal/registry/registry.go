@@ -1,19 +1,32 @@
 package registry
 
+import "github.com/gofiber/fiber/v2"
+
 type Service interface {
 	Name() string
 	Close()
 }
 
+type RoutableService interface {
+	RegisterRoutes(fiber.Router)
+}
+
 type ServiceRegistry struct {
+	router   fiber.Router
 	services []Service
 }
 
-func New() *ServiceRegistry {
-	return &ServiceRegistry{}
+func New(router fiber.Router) *ServiceRegistry {
+	return &ServiceRegistry{router: router}
 }
 
 func (r *ServiceRegistry) Add(services ...Service) {
+	for _, service := range services {
+		if routableService, ok := service.(RoutableService); ok {
+			routableService.RegisterRoutes(r.router)
+		}
+	}
+
 	r.services = append(r.services, services...)
 }
 

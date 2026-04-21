@@ -7,19 +7,10 @@ import (
 	"template/internal/adminconf"
 	serviceregistry "template/internal/registry"
 
-	libcrud "github.com/Mognus/go-grpc-crud/crud"
 	"github.com/gofiber/fiber/v2"
 	fiberredis "github.com/gofiber/storage/redis/v2"
 	"github.com/joho/godotenv"
 )
-
-type FiberService interface {
-	RegisterRoutes(fiber.Router)
-}
-
-type CRUDProviderService interface {
-	Providers() []libcrud.GRPCProvider
-}
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -32,7 +23,7 @@ func main() {
 
 	app := newApp()
 	api := app.Group("/api")
-	services := serviceregistry.New()
+	services := serviceregistry.New(api)
 
 	loadServices(api, services, redisStorage)
 	defer services.Close()
@@ -51,20 +42,6 @@ func main() {
 	}
 }
 
-func registerServiceRuntime(router fiber.Router, admin *adminconf.Module, services ...serviceregistry.Service) {
-	for _, service := range services {
-		if fiberService, ok := service.(FiberService); ok {
-			fiberService.RegisterRoutes(router)
-		}
-
-		if providerService, ok := service.(CRUDProviderService); ok {
-			for _, provider := range providerService.Providers() {
-				admin.RegisterCRUD(provider)
-			}
-		}
-	}
-}
-
 func loadServices(router fiber.Router, services *serviceregistry.ServiceRegistry, storage fiber.Storage) {
 	authSvc, err := authclient.New(
 		getEnv("AUTH_SERVICE_ADDR", "localhost:50051"),
@@ -77,9 +54,6 @@ func loadServices(router fiber.Router, services *serviceregistry.ServiceRegistry
 
 	admin := adminconf.New(authSvc.Config)
 	admin.Mount(router)
-
-	runtimeServices := []serviceregistry.Service{authSvc}
-
-	registerServiceRuntime(router, admin, runtimeServices...)
-	services.Add(runtimeServices...)
+	admin.RegisterProviders(authSvc)
+	services.Add(authSvc)
 }

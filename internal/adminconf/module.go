@@ -11,11 +11,16 @@ import (
 type Module struct {
 	auth      *authclient.Config
 	providers map[string]libcrud.GRPCProvider
+	services  []ProviderService
 }
 
 type modelInfo struct {
 	Name        string `json:"name"`
 	DisplayName string `json:"displayName"`
+}
+
+type ProviderService interface {
+	Providers() []libcrud.GRPCProvider
 }
 
 func New(auth *authclient.Config) *Module {
@@ -27,6 +32,16 @@ func New(auth *authclient.Config) *Module {
 
 func (m *Module) RegisterCRUD(provider libcrud.GRPCProvider) {
 	m.providers[provider.GetModelName()] = provider
+}
+
+func (m *Module) RegisterProviders(services ...ProviderService) {
+	m.services = append(m.services, services...)
+
+	for _, service := range services {
+		for _, provider := range service.Providers() {
+			m.RegisterCRUD(provider)
+		}
+	}
 }
 
 func (m *Module) getProvider(c *fiber.Ctx) (libcrud.GRPCProvider, bool) {
