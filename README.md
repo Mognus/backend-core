@@ -32,7 +32,7 @@ GET /auth/me
   → RequireAuth           checks c.Locals("user") != nil
   → authHandler.me()      reads userID via GetUserIDFromContext(c)
 
-GET /admin/api/users
+GET /admin/users
   → JWTMiddleware()       (registered on /admin/* group by admin)
   → RequireAdmin          checks claims["role"] == "admin"
   → UserProvider.HandleList() → gRPC → auth-service
@@ -46,7 +46,7 @@ The service registry mounts service routes when services are registered and keep
 services.New(router)
   authSvc, _ := authclient.New(...)
   admin.New(authSvc.Config, router) → /admin/* routes registered
-  admin.RegisterProviders(...svc)  → CRUD providers mount their own /admin/api/<model> routes
+  admin.RegisterProviders(...svc)  → CRUD providers mount their own /admin/<model> routes
   serviceRegistry.RegisterServices(...svc) → one or many services get routes + lifecycle + health names
 
   admin.RegisterProviders(authSvc, blogSvc, ...)

@@ -9,7 +9,7 @@ import (
 
 type AdminRegistry struct {
 	auth      AdminAuth
-	api       fiber.Router
+	router    fiber.Router
 	providers map[string]crud.GRPCProvider
 }
 
@@ -27,10 +27,10 @@ func New(auth AdminAuth, router fiber.Router) *AdminRegistry {
 	admin.Use(adminRegistry.auth.JWTMiddleware())
 	admin.Use(adminRegistry.auth.RequireAdmin)
 
-	adminRegistry.api = admin.Group("/api")
+	adminRegistry.router = admin
 
 	// Shared admin endpoints stay here; CRUD routes are mounted during provider registration.
-	adminRegistry.api.Get("/models", adminRegistry.GetModels)
+	adminRegistry.router.Get("/models", adminRegistry.GetModels)
 
 	return adminRegistry
 }
@@ -69,12 +69,12 @@ func (a *AdminRegistry) GetModels(c *fiber.Ctx) error {
 func (a *AdminRegistry) mountProviderRoutes(modelName string, provider crud.GRPCProvider) {
 	basePath := "/" + modelName
 
-	a.api.Get(basePath, provider.HandleList)
-	a.api.Post(basePath, provider.HandleCreate)
-	a.api.Get(basePath+"/schema", provider.HandleSchema)
-	a.api.Get(basePath+"/:id", provider.HandleGet)
-	a.api.Put(basePath+"/:id", provider.HandleUpdate)
-	a.api.Delete(basePath+"/:id", provider.HandleDelete)
+	a.router.Get(basePath, provider.HandleList)
+	a.router.Post(basePath, provider.HandleCreate)
+	a.router.Get(basePath+"/schema", provider.HandleSchema)
+	a.router.Get(basePath+"/:id", provider.HandleGet)
+	a.router.Put(basePath+"/:id", provider.HandleUpdate)
+	a.router.Delete(basePath+"/:id", provider.HandleDelete)
 }
 
 func (a *AdminRegistry) registerCRUD(provider crud.GRPCProvider) {
@@ -84,6 +84,6 @@ func (a *AdminRegistry) registerCRUD(provider crud.GRPCProvider) {
 	}
 
 	a.providers[modelName] = provider
-	// Each provider mounts its own concrete admin routes under /admin/api/<model>.
+	// Each provider mounts its own concrete admin routes under /admin/<model>.
 	a.mountProviderRoutes(modelName, provider)
 }
