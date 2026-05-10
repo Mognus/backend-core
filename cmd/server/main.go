@@ -1,49 +1,39 @@
 package main
 
 import (
+	"context"
 	"log"
+	"net/http"
 
-	"template/internal/bootstrap"
 	"template/internal/config"
-	"template/internal/services"
+	"template/internal/gateway"
 
-	"github.com/gofiber/fiber/v2"
-	fiberredis "github.com/gofiber/storage/redis/v2"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		log.Fatalf("load config: %v", err)
 	}
 
-	redisStorage := fiberredis.New(fiberredis.Config{
-		URL: cfg.Redis.URL,
-	})
+	ctx := context.Background()
 
-	app := newApp(cfg)
-	api := app.Group("/api")
-	serviceRegistry := services.New(api)
-
-	runtime := bootstrap.NewRuntime(cfg, api, redisStorage, serviceRegistry)
-	if err := runtime.Load(
-		bootstrap.NewAuthLoader(),
-		bootstrap.NewCMSLoader(),
-	); err != nil {
-		log.Fatalf("Failed to load services: %v", err)
+	handler, cleanup, err := gateway.New(ctx, cfg)
+	if err != nil {
+		log.Fatalf("setup gateway: %v", err)
 	}
-	defer serviceRegistry.Close()
-
-	app.Get("/health", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"status":  "ok",
-			"modules": serviceRegistry.Names(),
-		})
-	})
+	defer cleanup()
 
 	addr := cfg.Server.Host + ":" + cfg.Server.Port
-	log.Printf("Server starting on http://%s", addr)
-	if err := app.Listen(addr); err != nil {
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: h2c.NewHandler(handler, &http2.Server{}),
+	}
+
+	log.Printf("listening on http://%s", addr)
+	if err := srv.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
 }
