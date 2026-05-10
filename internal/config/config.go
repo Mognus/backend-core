@@ -14,6 +14,7 @@ type Config struct {
 	CORS     CORSConfig
 	Redis    RedisConfig
 	Auth     AuthConfig
+	CMS      CMSConfig
 	Services ServicesConfig
 }
 
@@ -39,6 +40,11 @@ type RedisConfig struct {
 type AuthConfig struct {
 	ServiceAddr string
 	JWTSecret   string
+}
+
+// CMSConfig holds cms-service related configuration
+type CMSConfig struct {
+	ServiceAddr string
 }
 
 // ServicesConfig holds service loading configuration
@@ -83,6 +89,9 @@ func Load() (*Config, error) {
 		Auth: AuthConfig{
 			ServiceAddr: GetEnv("AUTH_SERVICE_ADDR", "localhost:50051"),
 			JWTSecret:   GetEnv("JWT_SECRET", "your-secret-key-change-in-production"),
+		},
+		CMS: CMSConfig{
+			ServiceAddr: GetEnv("CMS_SERVICE_ADDR", "localhost:50052"),
 		},
 		Services: ServicesConfig{
 			Enabled: splitCSV(GetEnv("ENABLED_SERVICES", "")),

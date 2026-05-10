@@ -28,6 +28,7 @@ func main() {
 	runtime := bootstrap.NewRuntime(cfg, api, redisStorage, serviceRegistry)
 	if err := runtime.Load(
 		bootstrap.NewAuthLoader(),
+		bootstrap.NewCMSLoader(),
 	); err != nil {
 		log.Fatalf("Failed to load services: %v", err)
 	}

@@ -4,7 +4,11 @@ go 1.26.1
 
 require auth-service v0.0.0
 
+require cms-service v0.0.0
+
 replace auth-service => ../services/auth-service
+
+replace cms-service => ../services/cms-service
 
 replace github.com/Mognus/go-grpc-crud => ../services/lib
 
