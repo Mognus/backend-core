@@ -2,6 +2,7 @@ package about
 
 import (
 	"context"
+	"encoding/json"
 
 	grpccrud "github.com/Mognus/go-grpc-crud/server"
 	"gorm.io/gorm"
@@ -196,7 +197,7 @@ func experienceUpdates(experience *Experience) map[string]any {
 		"is_current":   experience.IsCurrent,
 		"sort_order":   experience.SortOrder,
 		"active":       experience.Active,
-		"technologies": experience.Technologies,
+		"technologies": jsonb(stringSlice(experience.Technologies)),
 	}
 }
 
@@ -228,4 +229,16 @@ func interestUpdates(interest *Interest) map[string]any {
 		"sort_order": interest.SortOrder,
 		"active":     interest.Active,
 	}
+}
+
+func jsonb(value any) any {
+	body, _ := json.Marshal(value)
+	return gorm.Expr("?::jsonb", string(body))
+}
+
+func stringSlice(value []string) []string {
+	if value == nil {
+		return []string{}
+	}
+	return value
 }

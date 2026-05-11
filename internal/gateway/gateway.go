@@ -109,6 +109,7 @@ func New(ctx context.Context, cfg *config.Config, database *gorm.DB) (http.Handl
 	// Core-owned admin models are registered directly; gRPC-backed admin models
 	// continue to be served by gwMux below.
 	aboutService := about.NewService(database)
+	about.RegisterPublicRoutes(mux, aboutService)
 	about.RegisterAdminRoutes(mux, adminMw, aboutService)
 
 	// All schema endpoints are served via grpc-gateway RPCs in each service.
