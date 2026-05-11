@@ -118,11 +118,12 @@ func (InterestTranslation) TableName() string { return "about_interest_translati
 type SkillCategory string
 
 const (
-	SkillCategoryBackend  SkillCategory = "backend"
-	SkillCategoryFrontend SkillCategory = "frontend"
-	SkillCategoryDevOps   SkillCategory = "devops"
-	SkillCategoryTooling  SkillCategory = "tooling"
-	SkillCategoryOther    SkillCategory = "other"
+	SkillCategoryBackend        SkillCategory = "backend"
+	SkillCategoryFrontend       SkillCategory = "frontend"
+	SkillCategoryDevOps         SkillCategory = "devops"
+	SkillCategoryTooling        SkillCategory = "tooling"
+	SkillCategoryInfrastructure SkillCategory = "infrastructure"
+	SkillCategoryOther          SkillCategory = "other"
 )
 
 type SkillLevel string
