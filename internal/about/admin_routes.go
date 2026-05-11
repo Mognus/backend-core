@@ -224,7 +224,7 @@ func experienceSchema() schema {
 			{Name: "isCurrent", Type: "boolean", Label: "Current"},
 			{Name: "sortOrder", Type: "number", Label: "Sort Order"},
 			{Name: "active", Type: "boolean", Label: "Active"},
-			{Name: "technologies", Type: "object", Label: "Technologies", TableHidden: true},
+			{Name: "technologies", Type: "tags", Label: "Technologies", TableHidden: true},
 			{Name: "translations", Type: "translation", Label: "Translations", TableHidden: true, TranslationFields: []subField{
 				{Name: "role", Label: "Role", Type: "text"},
 				{Name: "summary", Label: "Summary", Type: "textarea"},
