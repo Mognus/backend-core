@@ -1,7 +1,8 @@
 // Package gateway wires all gRPC services into a single HTTP handler via grpc-gateway.
 //
 // Flow: HTTP request → net/http ServeMux → grpc-gateway runtime.ServeMux
-//       → generated handler (from proto HTTP annotations) → gRPC client → service.
+//
+//	→ generated handler (from proto HTTP annotations) → gRPC client → service.
 //
 // Route precedence (Go 1.22 ServeMux): more specific patterns win.
 // Schema and /me are registered first so they take priority over the admin catch-all.
@@ -16,6 +17,7 @@ import (
 	authv1 "auth-service/gen/auth/v1"
 	cmsv1 "cms-service/gen/cms/v1"
 
+	"template/internal/about"
 	"template/internal/apierror"
 	"template/internal/config"
 	"template/internal/middleware"
@@ -23,10 +25,11 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"gorm.io/gorm"
 )
 
 // New builds the gateway handler and returns a cleanup func to close gRPC connections.
-func New(ctx context.Context, cfg *config.Config) (http.Handler, func(), error) {
+func New(ctx context.Context, cfg *config.Config, database *gorm.DB) (http.Handler, func(), error) {
 	authConn, err := grpc.NewClient(cfg.Auth.ServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, nil, err
@@ -92,12 +95,21 @@ func New(ctx context.Context, cfg *config.Config) (http.Handler, func(), error) 
 		{"users", "Users"},
 		{"roles", "Roles"},
 		{"content-groups", "Content Groups"},
+		{"about-experiences", "About Experiences"},
+		{"about-education", "About Education"},
+		{"about-skills", "About Skills"},
+		{"about-interests", "About Interests"},
 	}
 	modelsBody, _ := json.Marshal(map[string]any{"models": models})
 	mux.HandleFunc("GET /api/admin/models", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(modelsBody)
 	})
+
+	// Core-owned admin models are registered directly; gRPC-backed admin models
+	// continue to be served by gwMux below.
+	aboutService := about.NewService(database)
+	about.RegisterAdminRoutes(mux, adminMw, aboutService)
 
 	// All schema endpoints are served via grpc-gateway RPCs in each service.
 

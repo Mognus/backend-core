@@ -59,6 +59,7 @@ type DatabaseConfig struct {
 	Password string
 	Name     string
 	Port     string
+	SSLMode  string
 }
 
 // Load loads configuration from environment variables
@@ -77,6 +78,7 @@ func Load() (*Config, error) {
 			Password: GetEnv("DB_PASSWORD", "postgres"),
 			Name:     GetEnv("DB_NAME", "app_db"),
 			Port:     GetEnv("DB_PORT", "5432"),
+			SSLMode:  GetEnv("DB_SSLMODE", "disable"),
 		},
 		CORS: CORSConfig{
 			AllowOrigins: GetEnv("CORS_ALLOW_ORIGINS", "http://localhost:3000"),

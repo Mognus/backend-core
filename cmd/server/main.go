@@ -7,6 +7,7 @@ import (
 
 	"template/internal/config"
 	"template/internal/gateway"
+	"template/internal/platform/db"
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -20,7 +21,17 @@ func main() {
 
 	ctx := context.Background()
 
-	handler, cleanup, err := gateway.New(ctx, cfg)
+	database, err := db.Connect(cfg.Database)
+	if err != nil {
+		log.Fatalf("connect database: %v", err)
+	}
+	sqlDB, err := database.DB()
+	if err != nil {
+		log.Fatalf("database handle: %v", err)
+	}
+	defer sqlDB.Close()
+
+	handler, cleanup, err := gateway.New(ctx, cfg, database)
 	if err != nil {
 		log.Fatalf("setup gateway: %v", err)
 	}

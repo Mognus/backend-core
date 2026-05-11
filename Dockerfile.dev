@@ -22,5 +22,5 @@ COPY backend-core/ .
 # Expose port
 EXPOSE 8080
 
-# Run with Air
-CMD ["air"]
+# Run migrations, then start Air for hot reload.
+CMD ["sh", "-c", "go run ./cmd/migrate up && air"]
