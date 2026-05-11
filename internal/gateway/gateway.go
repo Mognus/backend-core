@@ -88,13 +88,12 @@ func New(ctx context.Context, cfg *config.Config) (http.Handler, func(), error) 
 	// the service prefix (e.g. "auth/users") so the frontend builds URLs generically.
 	type modelInfo struct {
 		Name        string `json:"name"`
-		APIPath     string `json:"apiPath"`
 		DisplayName string `json:"displayName"`
 	}
 	models := []modelInfo{
-		{authschema.Users.Name, authschema.Users.APIPath, authschema.Users.DisplayName},
-		{authschema.Roles.Name, authschema.Roles.APIPath, authschema.Roles.DisplayName},
-		{cmsschema.ContentGroups.Name, cmsschema.ContentGroups.APIPath, cmsschema.ContentGroups.DisplayName},
+		{authschema.Users.Name, authschema.Users.DisplayName},
+		{authschema.Roles.Name, authschema.Roles.DisplayName},
+		{cmsschema.ContentGroups.Name, cmsschema.ContentGroups.DisplayName},
 	}
 	modelsBody, _ := json.Marshal(map[string]any{"models": models})
 	mux.HandleFunc("GET /api/admin/models", func(w http.ResponseWriter, r *http.Request) {
@@ -102,10 +101,28 @@ func New(ctx context.Context, cfg *config.Config) (http.Handler, func(), error) 
 		w.Write(modelsBody)
 	})
 
-	// Schema endpoints — static JSON, owned by each service's schema package.
-	mux.HandleFunc("GET /api/admin/auth/users/schema", schemaHandler(authschema.Users))
-	mux.HandleFunc("GET /api/admin/auth/roles/schema", schemaHandler(authschema.Roles))
-	mux.HandleFunc("GET /api/admin/cms/content-groups/schema", schemaHandler(cmsschema.ContentGroups))
+	// Schema endpoints — static for most models, dynamic for users (role options fetched live).
+	mux.HandleFunc("GET /api/admin/roles/schema", schemaHandler(authschema.Roles))
+	mux.HandleFunc("GET /api/admin/content-groups/schema", schemaHandler(cmsschema.ContentGroups))
+	mux.HandleFunc("GET /api/admin/users/schema", func(w http.ResponseWriter, r *http.Request) {
+		schema := authschema.Users
+		if resp, err := authClient.ListRoles(r.Context(), &authv1.ListRolesRequest{Limit: 100}); err == nil {
+			for i, f := range schema.Fields {
+				if f.Name == "roleId" {
+					for _, role := range resp.Items {
+						schema.Fields[i].Options = append(schema.Fields[i].Options, authschema.SelectOption{
+							Value: role.Id,
+							Label: role.Name,
+						})
+					}
+					break
+				}
+			}
+		}
+		data, _ := json.Marshal(schema)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
+	})
 
 	// /me is the only custom handler: GetUser requires an ID which we extract from
 	// the JWT — grpc-gateway can't do that without a dedicated proto RPC.
