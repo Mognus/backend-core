@@ -19,15 +19,22 @@ type schema struct {
 	Searchable  []string `json:"searchable"`
 }
 
+type subField struct {
+	Name  string `json:"name"`
+	Label string `json:"label"`
+	Type  string `json:"type"`
+}
+
 type field struct {
-	Name         string `json:"name"`
-	Type         string `json:"type"`
-	Label        string `json:"label"`
-	Required     bool   `json:"required,omitempty"`
-	Readonly     bool   `json:"readonly,omitempty"`
-	TableHidden  bool   `json:"tableHidden,omitempty"`
-	EditHidden   bool   `json:"editHidden,omitempty"`
-	CreateHidden bool   `json:"createHidden,omitempty"`
+	Name              string     `json:"name"`
+	Type              string     `json:"type"`
+	Label             string     `json:"label"`
+	Required          bool       `json:"required,omitempty"`
+	Readonly          bool       `json:"readonly,omitempty"`
+	TableHidden       bool       `json:"tableHidden,omitempty"`
+	EditHidden        bool       `json:"editHidden,omitempty"`
+	CreateHidden      bool       `json:"createHidden,omitempty"`
+	TranslationFields []subField `json:"translationFields,omitempty"`
 }
 
 func RegisterAdminRoutes(mux *http.ServeMux, mw func(http.Handler) http.Handler, service *Service) {
@@ -218,7 +225,10 @@ func experienceSchema() schema {
 			{Name: "sortOrder", Type: "number", Label: "Sort Order"},
 			{Name: "active", Type: "boolean", Label: "Active"},
 			{Name: "technologies", Type: "object", Label: "Technologies", TableHidden: true},
-			{Name: "translations", Type: "object", Label: "Translations", TableHidden: true},
+			{Name: "translations", Type: "translation", Label: "Translations", TableHidden: true, TranslationFields: []subField{
+				{Name: "role", Label: "Role", Type: "text"},
+				{Name: "summary", Label: "Summary", Type: "textarea"},
+			}},
 			{Name: "createdAt", Type: "date", Label: "Created", Readonly: true, EditHidden: true, CreateHidden: true},
 			{Name: "updatedAt", Type: "date", Label: "Updated", Readonly: true, EditHidden: true, CreateHidden: true},
 		},
@@ -239,7 +249,10 @@ func educationSchema() schema {
 			{Name: "isCurrent", Type: "boolean", Label: "Current"},
 			{Name: "sortOrder", Type: "number", Label: "Sort Order"},
 			{Name: "active", Type: "boolean", Label: "Active"},
-			{Name: "translations", Type: "object", Label: "Translations", TableHidden: true},
+			{Name: "translations", Type: "translation", Label: "Translations", TableHidden: true, TranslationFields: []subField{
+				{Name: "title", Label: "Title", Type: "text"},
+				{Name: "summary", Label: "Summary", Type: "textarea"},
+			}},
 			{Name: "createdAt", Type: "date", Label: "Created", Readonly: true, EditHidden: true, CreateHidden: true},
 			{Name: "updatedAt", Type: "date", Label: "Updated", Readonly: true, EditHidden: true, CreateHidden: true},
 		},
@@ -258,7 +271,10 @@ func skillSchema() schema {
 			{Name: "level", Type: "string", Label: "Level", Required: true},
 			{Name: "sortOrder", Type: "number", Label: "Sort Order"},
 			{Name: "active", Type: "boolean", Label: "Active"},
-			{Name: "translations", Type: "object", Label: "Translations", TableHidden: true},
+			{Name: "translations", Type: "translation", Label: "Translations", TableHidden: true, TranslationFields: []subField{
+				{Name: "name", Label: "Name", Type: "text"},
+				{Name: "summary", Label: "Summary", Type: "textarea"},
+			}},
 			{Name: "createdAt", Type: "date", Label: "Created", Readonly: true, EditHidden: true, CreateHidden: true},
 			{Name: "updatedAt", Type: "date", Label: "Updated", Readonly: true, EditHidden: true, CreateHidden: true},
 		},
@@ -275,7 +291,10 @@ func interestSchema() schema {
 			{Name: "key", Type: "string", Label: "Key", Required: true},
 			{Name: "sortOrder", Type: "number", Label: "Sort Order"},
 			{Name: "active", Type: "boolean", Label: "Active"},
-			{Name: "translations", Type: "object", Label: "Translations", TableHidden: true},
+			{Name: "translations", Type: "translation", Label: "Translations", TableHidden: true, TranslationFields: []subField{
+				{Name: "name", Label: "Name", Type: "text"},
+				{Name: "summary", Label: "Summary", Type: "textarea"},
+			}},
 			{Name: "createdAt", Type: "date", Label: "Created", Readonly: true, EditHidden: true, CreateHidden: true},
 			{Name: "updatedAt", Type: "date", Label: "Updated", Readonly: true, EditHidden: true, CreateHidden: true},
 		},
