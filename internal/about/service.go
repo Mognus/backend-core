@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 
-	grpccrud "github.com/Mognus/go-grpc-crud/server"
+	"github.com/Mognus/go-grpc-crud/dbcrud"
 	"gorm.io/gorm"
 )
 
-var experienceListConfig = grpccrud.ListConfig{
+var experienceListConfig = dbcrud.ListConfig{
 	Preloads:        []string{"Translations"},
 	Searchable:      []string{"company", "location"},
 	Filterable:      []string{"id", "company", "location", "active", "isCurrent"},
@@ -16,7 +16,7 @@ var experienceListConfig = grpccrud.ListConfig{
 	DefaultSort:     "sort_order ASC, start_date DESC, id ASC",
 }
 
-var educationListConfig = grpccrud.ListConfig{
+var educationListConfig = dbcrud.ListConfig{
 	Preloads:        []string{"Translations"},
 	Searchable:      []string{"institution", "location"},
 	Filterable:      []string{"id", "institution", "location", "active", "isCurrent"},
@@ -24,7 +24,7 @@ var educationListConfig = grpccrud.ListConfig{
 	DefaultSort:     "sort_order ASC, start_date DESC, id ASC",
 }
 
-var skillListConfig = grpccrud.ListConfig{
+var skillListConfig = dbcrud.ListConfig{
 	Preloads:        []string{"Translations"},
 	Searchable:      []string{"key", "category", "level"},
 	Filterable:      []string{"id", "key", "category", "level", "active"},
@@ -32,7 +32,7 @@ var skillListConfig = grpccrud.ListConfig{
 	DefaultSort:     "sort_order ASC, id ASC",
 }
 
-var interestListConfig = grpccrud.ListConfig{
+var interestListConfig = dbcrud.ListConfig{
 	Preloads:        []string{"Translations"},
 	Searchable:      []string{"key"},
 	Filterable:      []string{"id", "key", "active"},
@@ -49,23 +49,23 @@ func NewService(db *gorm.DB) *Service {
 }
 
 func (s *Service) GetExperience(ctx context.Context, id uint64) (Experience, error) {
-	return grpccrud.DefaultGet[Experience](ctx, s.db, id, "Translations")
+	return dbcrud.DefaultGet[Experience](ctx, s.db, id, "Translations")
 }
 
-func (s *Service) ListExperiences(ctx context.Context, req grpccrud.ListRequest) ([]Experience, int64, error) {
-	return grpccrud.DefaultList[Experience](ctx, s.db, req, experienceListConfig)
+func (s *Service) ListExperiences(ctx context.Context, req dbcrud.ListRequest) ([]Experience, int64, error) {
+	return dbcrud.DefaultList[Experience](ctx, s.db, req, experienceListConfig)
 }
 
 func (s *Service) CreateExperience(ctx context.Context, experience *Experience) (*Experience, error) {
-	return grpccrud.DefaultCreate(ctx, s.db, experience, "Translations")
+	return dbcrud.DefaultCreate(ctx, s.db, experience, "Translations")
 }
 
 func (s *Service) UpdateExperience(ctx context.Context, id uint64, updates map[string]any) (*Experience, error) {
-	return grpccrud.DefaultUpdate[Experience](ctx, s.db, id, updates, "Translations")
+	return dbcrud.DefaultUpdate[Experience](ctx, s.db, id, updates, "Translations")
 }
 
 func (s *Service) SaveExperience(ctx context.Context, id uint64, experience *Experience) (*Experience, error) {
-	return grpccrud.DefaultReplaceChildren[Experience, ExperienceTranslation](
+	return dbcrud.DefaultReplaceChildren[Experience, ExperienceTranslation](
 		ctx,
 		s.db,
 		id,
@@ -80,27 +80,27 @@ func (s *Service) SaveExperience(ctx context.Context, id uint64, experience *Exp
 }
 
 func (s *Service) DeleteExperience(ctx context.Context, id uint64) error {
-	return grpccrud.DefaultDelete(ctx, s.db, &Experience{}, id)
+	return dbcrud.DefaultDelete(ctx, s.db, &Experience{}, id)
 }
 
 func (s *Service) GetEducation(ctx context.Context, id uint64) (Education, error) {
-	return grpccrud.DefaultGet[Education](ctx, s.db, id, "Translations")
+	return dbcrud.DefaultGet[Education](ctx, s.db, id, "Translations")
 }
 
-func (s *Service) ListEducation(ctx context.Context, req grpccrud.ListRequest) ([]Education, int64, error) {
-	return grpccrud.DefaultList[Education](ctx, s.db, req, educationListConfig)
+func (s *Service) ListEducation(ctx context.Context, req dbcrud.ListRequest) ([]Education, int64, error) {
+	return dbcrud.DefaultList[Education](ctx, s.db, req, educationListConfig)
 }
 
 func (s *Service) CreateEducation(ctx context.Context, education *Education) (*Education, error) {
-	return grpccrud.DefaultCreate(ctx, s.db, education, "Translations")
+	return dbcrud.DefaultCreate(ctx, s.db, education, "Translations")
 }
 
 func (s *Service) UpdateEducation(ctx context.Context, id uint64, updates map[string]any) (*Education, error) {
-	return grpccrud.DefaultUpdate[Education](ctx, s.db, id, updates, "Translations")
+	return dbcrud.DefaultUpdate[Education](ctx, s.db, id, updates, "Translations")
 }
 
 func (s *Service) SaveEducation(ctx context.Context, id uint64, education *Education) (*Education, error) {
-	return grpccrud.DefaultReplaceChildren[Education, EducationTranslation](
+	return dbcrud.DefaultReplaceChildren[Education, EducationTranslation](
 		ctx,
 		s.db,
 		id,
@@ -115,27 +115,27 @@ func (s *Service) SaveEducation(ctx context.Context, id uint64, education *Educa
 }
 
 func (s *Service) DeleteEducation(ctx context.Context, id uint64) error {
-	return grpccrud.DefaultDelete(ctx, s.db, &Education{}, id)
+	return dbcrud.DefaultDelete(ctx, s.db, &Education{}, id)
 }
 
 func (s *Service) GetSkill(ctx context.Context, id uint64) (Skill, error) {
-	return grpccrud.DefaultGet[Skill](ctx, s.db, id, "Translations")
+	return dbcrud.DefaultGet[Skill](ctx, s.db, id, "Translations")
 }
 
-func (s *Service) ListSkills(ctx context.Context, req grpccrud.ListRequest) ([]Skill, int64, error) {
-	return grpccrud.DefaultList[Skill](ctx, s.db, req, skillListConfig)
+func (s *Service) ListSkills(ctx context.Context, req dbcrud.ListRequest) ([]Skill, int64, error) {
+	return dbcrud.DefaultList[Skill](ctx, s.db, req, skillListConfig)
 }
 
 func (s *Service) CreateSkill(ctx context.Context, skill *Skill) (*Skill, error) {
-	return grpccrud.DefaultCreate(ctx, s.db, skill, "Translations")
+	return dbcrud.DefaultCreate(ctx, s.db, skill, "Translations")
 }
 
 func (s *Service) UpdateSkill(ctx context.Context, id uint64, updates map[string]any) (*Skill, error) {
-	return grpccrud.DefaultUpdate[Skill](ctx, s.db, id, updates, "Translations")
+	return dbcrud.DefaultUpdate[Skill](ctx, s.db, id, updates, "Translations")
 }
 
 func (s *Service) SaveSkill(ctx context.Context, id uint64, skill *Skill) (*Skill, error) {
-	return grpccrud.DefaultReplaceChildren[Skill, SkillTranslation](
+	return dbcrud.DefaultReplaceChildren[Skill, SkillTranslation](
 		ctx,
 		s.db,
 		id,
@@ -150,27 +150,27 @@ func (s *Service) SaveSkill(ctx context.Context, id uint64, skill *Skill) (*Skil
 }
 
 func (s *Service) DeleteSkill(ctx context.Context, id uint64) error {
-	return grpccrud.DefaultDelete(ctx, s.db, &Skill{}, id)
+	return dbcrud.DefaultDelete(ctx, s.db, &Skill{}, id)
 }
 
 func (s *Service) GetInterest(ctx context.Context, id uint64) (Interest, error) {
-	return grpccrud.DefaultGet[Interest](ctx, s.db, id, "Translations")
+	return dbcrud.DefaultGet[Interest](ctx, s.db, id, "Translations")
 }
 
-func (s *Service) ListInterests(ctx context.Context, req grpccrud.ListRequest) ([]Interest, int64, error) {
-	return grpccrud.DefaultList[Interest](ctx, s.db, req, interestListConfig)
+func (s *Service) ListInterests(ctx context.Context, req dbcrud.ListRequest) ([]Interest, int64, error) {
+	return dbcrud.DefaultList[Interest](ctx, s.db, req, interestListConfig)
 }
 
 func (s *Service) CreateInterest(ctx context.Context, interest *Interest) (*Interest, error) {
-	return grpccrud.DefaultCreate(ctx, s.db, interest, "Translations")
+	return dbcrud.DefaultCreate(ctx, s.db, interest, "Translations")
 }
 
 func (s *Service) UpdateInterest(ctx context.Context, id uint64, updates map[string]any) (*Interest, error) {
-	return grpccrud.DefaultUpdate[Interest](ctx, s.db, id, updates, "Translations")
+	return dbcrud.DefaultUpdate[Interest](ctx, s.db, id, updates, "Translations")
 }
 
 func (s *Service) SaveInterest(ctx context.Context, id uint64, interest *Interest) (*Interest, error) {
-	return grpccrud.DefaultReplaceChildren[Interest, InterestTranslation](
+	return dbcrud.DefaultReplaceChildren[Interest, InterestTranslation](
 		ctx,
 		s.db,
 		id,
@@ -185,7 +185,7 @@ func (s *Service) SaveInterest(ctx context.Context, id uint64, interest *Interes
 }
 
 func (s *Service) DeleteInterest(ctx context.Context, id uint64) error {
-	return grpccrud.DefaultDelete(ctx, s.db, &Interest{}, id)
+	return dbcrud.DefaultDelete(ctx, s.db, &Interest{}, id)
 }
 
 func experienceUpdates(experience *Experience) map[string]any {

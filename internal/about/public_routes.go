@@ -5,7 +5,7 @@ import (
 
 	"template/internal/apierror"
 
-	grpccrud "github.com/Mognus/go-grpc-crud/server"
+	"github.com/Mognus/go-grpc-crud/dbcrud"
 )
 
 func RegisterPublicRoutes(mux *http.ServeMux, service *Service) {
@@ -43,8 +43,8 @@ func RegisterPublicRoutes(mux *http.ServeMux, service *Service) {
 	})
 }
 
-func publicListRequest() grpccrud.ListRequest {
-	return grpccrud.ListRequest{
+func publicListRequest() dbcrud.ListRequest {
+	return dbcrud.ListRequest{
 		Page:    1,
 		Limit:   100,
 		Filters: map[string]string{"active": "true"},

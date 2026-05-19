@@ -9,7 +9,7 @@ import (
 
 	"template/internal/apierror"
 
-	grpccrud "github.com/Mognus/go-grpc-crud/server"
+	"github.com/Mognus/go-grpc-crud/dbcrud"
 )
 
 func RegisterAdminRoutes(mux *http.ServeMux, mw func(http.Handler) http.Handler, service *Service) {
@@ -49,7 +49,7 @@ func RegisterAdminRoutes(mux *http.ServeMux, mw func(http.Handler) http.Handler,
 
 type resource[T any] struct {
 	path   string
-	list   func(context.Context, grpccrud.ListRequest) ([]T, int64, error)
+	list   func(context.Context, dbcrud.ListRequest) ([]T, int64, error)
 	get    func(context.Context, uint64) (T, error)
 	create func(context.Context, *T) (*T, error)
 	save   func(context.Context, uint64, *T) (*T, error)
@@ -126,7 +126,7 @@ func registerResource[T any](mux *http.ServeMux, mw func(http.Handler) http.Hand
 	})))
 }
 
-func parseListRequest(r *http.Request) grpccrud.ListRequest {
+func parseListRequest(r *http.Request) dbcrud.ListRequest {
 	query := r.URL.Query()
 	filters := make(map[string]string)
 	for key, values := range query {
@@ -135,7 +135,7 @@ func parseListRequest(r *http.Request) grpccrud.ListRequest {
 		}
 		filters[strings.TrimSuffix(strings.TrimPrefix(key, "filters["), "]")] = values[0]
 	}
-	return grpccrud.ListRequest{
+	return dbcrud.ListRequest{
 		Page:    int32(parseInt(query.Get("page"), 1)),
 		Limit:   int32(parseInt(query.Get("limit"), 20)),
 		Filters: filters,
