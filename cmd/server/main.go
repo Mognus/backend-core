@@ -8,6 +8,7 @@ import (
 	"template/internal/config"
 	"template/internal/gateway"
 	"template/internal/platform/db"
+	"template/internal/router"
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -31,11 +32,15 @@ func main() {
 	}
 	defer sqlDB.Close()
 
-	handler, cleanup, err := gateway.New(ctx, cfg, database)
+	gw, err := gateway.New(ctx, cfg, database)
 	if err != nil {
 		log.Fatalf("setup gateway: %v", err)
 	}
-	defer cleanup()
+	defer gw.Close()
+	handler := router.New(cfg, router.Deps{
+		Gateway:    gw.Handler,
+		AuthClient: gw.AuthClient,
+	})
 
 	addr := cfg.Server.Host + ":" + cfg.Server.Port
 	srv := &http.Server{
