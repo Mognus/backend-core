@@ -15,14 +15,12 @@ import (
 
 	authv1 "auth-service/gen/auth/v1"
 
-	"template/internal/about"
 	"template/internal/config"
 	"template/internal/middleware"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"gorm.io/gorm"
 )
 
 type Gateway struct {
@@ -38,7 +36,7 @@ func (g *Gateway) Close() {
 }
 
 // New builds the gateway handler and owns the gRPC clients it creates.
-func New(ctx context.Context, cfg *config.Config, database *gorm.DB) (*Gateway, error) {
+func New(ctx context.Context, cfg *config.Config) (*Gateway, error) {
 	authConn, err := grpc.NewClient(cfg.Auth.ServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
@@ -83,12 +81,6 @@ func New(ctx context.Context, cfg *config.Config, database *gorm.DB) (*Gateway, 
 	adminMw := func(h http.Handler) http.Handler { return jwtMw(middleware.RequireAdmin(h)) }
 
 	mux := http.NewServeMux()
-
-	// Core-owned admin routes are registered directly; gRPC-backed admin routes
-	// continue to be served by gwMux until they get explicit BFF handlers.
-	aboutService := about.NewService(database)
-	about.RegisterPublicRoutes(mux, aboutService)
-	about.RegisterAdminRoutes(mux, adminMw, aboutService)
 
 	// Admin routes are protected; gwMux handles the actual routing internally.
 	mux.Handle("/api/admin/", adminMw(gwMux))

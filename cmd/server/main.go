@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"template/internal/about"
 	"template/internal/config"
 	"template/internal/gateway"
 	"template/internal/platform/db"
@@ -32,7 +33,7 @@ func main() {
 	}
 	defer sqlDB.Close()
 
-	gw, err := gateway.New(ctx, cfg, database)
+	gw, err := gateway.New(ctx, cfg)
 	if err != nil {
 		log.Fatalf("setup gateway: %v", err)
 	}
@@ -40,6 +41,7 @@ func main() {
 	handler := router.New(cfg, router.Deps{
 		Gateway:    gw.Handler,
 		AuthClient: gw.AuthClient,
+		About:      about.NewService(database),
 	})
 
 	addr := cfg.Server.Host + ":" + cfg.Server.Port

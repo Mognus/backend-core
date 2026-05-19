@@ -6,6 +6,7 @@ import (
 
 	authv1 "auth-service/gen/auth/v1"
 
+	"template/internal/about"
 	"template/internal/config"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +15,7 @@ import (
 type Deps struct {
 	Gateway    http.Handler
 	AuthClient authv1.AuthServiceClient
+	About      *about.Service
 }
 
 func New(cfg *config.Config, deps Deps) http.Handler {
@@ -26,6 +28,9 @@ func New(cfg *config.Config, deps Deps) http.Handler {
 	api := r.Group("/api")
 	auth := api.Group("/auth")
 	auth.GET("/me", jwtAuth(cfg.Auth.JWTSecret), getMe(deps.AuthClient))
+
+	admin := api.Group("/admin", jwtAuth(cfg.Auth.JWTSecret), requireAdmin())
+	registerModules(api, admin, newAboutRoutes(deps.About))
 
 	r.NoRoute(gin.WrapH(deps.Gateway))
 	r.NoMethod(gin.WrapH(deps.Gateway))
