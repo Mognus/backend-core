@@ -4,13 +4,10 @@ go 1.26.1
 
 replace auth-service => ../services/auth-service
 
-replace cms-service => ../services/cms-service
-
 replace github.com/Mognus/go-grpc-crud => ../services/lib
 
 require (
 	auth-service v0.0.0-00010101000000-000000000000
-	cms-service v0.0.0-00010101000000-000000000000
 	github.com/Mognus/go-grpc-crud v0.0.0-00010101000000-000000000000
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/golang-migrate/migrate/v4 v4.19.1

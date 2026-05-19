@@ -2,7 +2,6 @@ package config
 
 import (
 	"os"
-	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -14,8 +13,6 @@ type Config struct {
 	CORS     CORSConfig
 	Redis    RedisConfig
 	Auth     AuthConfig
-	CMS      CMSConfig
-	Services ServicesConfig
 }
 
 // ServerConfig holds server-related configuration
@@ -40,16 +37,6 @@ type RedisConfig struct {
 type AuthConfig struct {
 	ServiceAddr string
 	JWTSecret   string
-}
-
-// CMSConfig holds cms-service related configuration
-type CMSConfig struct {
-	ServiceAddr string
-}
-
-// ServicesConfig holds service loading configuration
-type ServicesConfig struct {
-	Enabled []string
 }
 
 // DatabaseConfig holds database-related configuration
@@ -92,12 +79,6 @@ func Load() (*Config, error) {
 			ServiceAddr: GetEnv("AUTH_SERVICE_ADDR", "localhost:50051"),
 			JWTSecret:   GetEnv("JWT_SECRET", "your-secret-key-change-in-production"),
 		},
-		CMS: CMSConfig{
-			ServiceAddr: GetEnv("CMS_SERVICE_ADDR", "localhost:50052"),
-		},
-		Services: ServicesConfig{
-			Enabled: splitCSV(GetEnv("ENABLED_SERVICES", "")),
-		},
 	}
 
 	return cfg, nil
@@ -114,22 +95,4 @@ func GetEnv(key, fallback string) string {
 // Get is a convenience method to get config value with fallback
 func (c *Config) Get(key, fallback string) string {
 	return GetEnv(key, fallback)
-}
-
-func splitCSV(value string) []string {
-	if value == "" {
-		return nil
-	}
-
-	parts := strings.Split(value, ",")
-	values := make([]string, 0, len(parts))
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part == "" {
-			continue
-		}
-		values = append(values, part)
-	}
-
-	return values
 }

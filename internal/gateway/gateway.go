@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	authv1 "auth-service/gen/auth/v1"
-	cmsv1 "cms-service/gen/cms/v1"
 
 	"template/internal/about"
 	"template/internal/apierror"
@@ -34,15 +33,9 @@ func New(ctx context.Context, cfg *config.Config, database *gorm.DB) (http.Handl
 	if err != nil {
 		return nil, nil, err
 	}
-	cmsConn, err := grpc.NewClient(cfg.CMS.ServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		authConn.Close()
-		return nil, nil, err
-	}
 
 	cleanup := func() {
 		authConn.Close()
-		cmsConn.Close()
 	}
 
 	authClient := authv1.NewAuthServiceClient(authConn)
@@ -74,10 +67,6 @@ func New(ctx context.Context, cfg *config.Config, database *gorm.DB) (http.Handl
 		cleanup()
 		return nil, nil, err
 	}
-	if err := cmsv1.RegisterCmsServiceHandlerClient(ctx, gwMux, cmsv1.NewCmsServiceClient(cmsConn)); err != nil {
-		cleanup()
-		return nil, nil, err
-	}
 
 	jwtMw := middleware.JWT(cfg.Auth.JWTSecret)
 	// adminMw chains JWT validation + role check into a single middleware.
@@ -94,7 +83,6 @@ func New(ctx context.Context, cfg *config.Config, database *gorm.DB) (http.Handl
 	models := []modelInfo{
 		{"users", "Users"},
 		{"roles", "Roles"},
-		{"content-groups", "Content Groups"},
 		{"about-experiences", "About Experiences"},
 		{"about-education", "About Education"},
 		{"about-skills", "About Skills"},
@@ -111,8 +99,6 @@ func New(ctx context.Context, cfg *config.Config, database *gorm.DB) (http.Handl
 	aboutService := about.NewService(database)
 	about.RegisterPublicRoutes(mux, aboutService)
 	about.RegisterAdminRoutes(mux, adminMw, aboutService)
-
-	// All schema endpoints are served via grpc-gateway RPCs in each service.
 
 	// /me is the only custom handler: GetUser requires an ID which we extract from
 	// the JWT — grpc-gateway can't do that without a dedicated proto RPC.
@@ -134,7 +120,7 @@ func New(ctx context.Context, cfg *config.Config, database *gorm.DB) (http.Handl
 	// Admin routes are protected; gwMux handles the actual routing internally.
 	mux.Handle("/api/admin/", adminMw(gwMux))
 
-	// Public catch-all — covers /api/auth/login, /api/auth/register, /api/cms/content, etc.
+	// Public catch-all — covers /api/auth/login, /api/auth/register, etc.
 	mux.Handle("/", gwMux)
 
 	return corsMiddleware(cfg.CORS.AllowOrigins, mux), cleanup, nil
