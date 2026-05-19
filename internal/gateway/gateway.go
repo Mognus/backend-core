@@ -5,7 +5,7 @@
 //	→ generated handler (from proto HTTP annotations) → gRPC client → service.
 //
 // Route precedence (Go 1.22 ServeMux): more specific patterns win.
-// Schema and /me are registered first so they take priority over the admin catch-all.
+// /me is registered before the public catch-all so it takes priority.
 package gateway
 
 import (
@@ -74,28 +74,8 @@ func New(ctx context.Context, cfg *config.Config, database *gorm.DB) (http.Handl
 
 	mux := http.NewServeMux()
 
-	// /api/admin/models replaces the old AdminRegistry endpoint. Model names carry
-	// the service prefix (e.g. "auth/users") so the frontend builds URLs generically.
-	type modelInfo struct {
-		Name        string `json:"name"`
-		DisplayName string `json:"displayName"`
-	}
-	models := []modelInfo{
-		{"users", "Users"},
-		{"roles", "Roles"},
-		{"about-experiences", "About Experiences"},
-		{"about-education", "About Education"},
-		{"about-skills", "About Skills"},
-		{"about-interests", "About Interests"},
-	}
-	modelsBody, _ := json.Marshal(map[string]any{"models": models})
-	mux.HandleFunc("GET /api/admin/models", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(modelsBody)
-	})
-
-	// Core-owned admin models are registered directly; gRPC-backed admin models
-	// continue to be served by gwMux below.
+	// Core-owned admin routes are registered directly; gRPC-backed admin routes
+	// continue to be served by gwMux until they get explicit BFF handlers.
 	aboutService := about.NewService(database)
 	about.RegisterPublicRoutes(mux, aboutService)
 	about.RegisterAdminRoutes(mux, adminMw, aboutService)

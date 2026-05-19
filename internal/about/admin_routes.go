@@ -12,35 +12,9 @@ import (
 	grpccrud "github.com/Mognus/go-grpc-crud/server"
 )
 
-type schema struct {
-	Name        string   `json:"name"`
-	DisplayName string   `json:"displayName"`
-	Fields      []field  `json:"fields"`
-	Searchable  []string `json:"searchable"`
-}
-
-type subField struct {
-	Name  string `json:"name"`
-	Label string `json:"label"`
-	Type  string `json:"type"`
-}
-
-type field struct {
-	Name              string     `json:"name"`
-	Type              string     `json:"type"`
-	Label             string     `json:"label"`
-	Required          bool       `json:"required,omitempty"`
-	Readonly          bool       `json:"readonly,omitempty"`
-	TableHidden       bool       `json:"tableHidden,omitempty"`
-	EditHidden        bool       `json:"editHidden,omitempty"`
-	CreateHidden      bool       `json:"createHidden,omitempty"`
-	TranslationFields []subField `json:"translationFields,omitempty"`
-}
-
 func RegisterAdminRoutes(mux *http.ServeMux, mw func(http.Handler) http.Handler, service *Service) {
 	registerResource(mux, mw, resource[Experience]{
 		path:   "about-experiences",
-		schema: experienceSchema(),
 		list:   service.ListExperiences,
 		get:    service.GetExperience,
 		create: service.CreateExperience,
@@ -49,7 +23,6 @@ func RegisterAdminRoutes(mux *http.ServeMux, mw func(http.Handler) http.Handler,
 	})
 	registerResource(mux, mw, resource[Education]{
 		path:   "about-education",
-		schema: educationSchema(),
 		list:   service.ListEducation,
 		get:    service.GetEducation,
 		create: service.CreateEducation,
@@ -58,7 +31,6 @@ func RegisterAdminRoutes(mux *http.ServeMux, mw func(http.Handler) http.Handler,
 	})
 	registerResource(mux, mw, resource[Skill]{
 		path:   "about-skills",
-		schema: skillSchema(),
 		list:   service.ListSkills,
 		get:    service.GetSkill,
 		create: service.CreateSkill,
@@ -67,7 +39,6 @@ func RegisterAdminRoutes(mux *http.ServeMux, mw func(http.Handler) http.Handler,
 	})
 	registerResource(mux, mw, resource[Interest]{
 		path:   "about-interests",
-		schema: interestSchema(),
 		list:   service.ListInterests,
 		get:    service.GetInterest,
 		create: service.CreateInterest,
@@ -78,7 +49,6 @@ func RegisterAdminRoutes(mux *http.ServeMux, mw func(http.Handler) http.Handler,
 
 type resource[T any] struct {
 	path   string
-	schema schema
 	list   func(context.Context, grpccrud.ListRequest) ([]T, int64, error)
 	get    func(context.Context, uint64) (T, error)
 	create func(context.Context, *T) (*T, error)
@@ -89,9 +59,6 @@ type resource[T any] struct {
 func registerResource[T any](mux *http.ServeMux, mw func(http.Handler) http.Handler, res resource[T]) {
 	base := "/api/admin/" + res.path
 
-	mux.Handle("GET "+base+"/schema", mw(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		writeJSON(w, http.StatusOK, res.schema)
-	})))
 	mux.Handle("GET "+base, mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		req := parseListRequest(r)
 		items, total, err := res.list(r.Context(), req)
@@ -208,95 +175,4 @@ func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(body)
-}
-
-func experienceSchema() schema {
-	return schema{
-		Name:        "about-experiences",
-		DisplayName: "About Experiences",
-		Searchable:  []string{"company", "location", "active"},
-		Fields: []field{
-			{Name: "id", Type: "number", Label: "ID", Readonly: true, EditHidden: true, CreateHidden: true},
-			{Name: "company", Type: "string", Label: "Company", Required: true},
-			{Name: "location", Type: "string", Label: "Location"},
-			{Name: "startDate", Type: "date", Label: "Start Date", Required: true},
-			{Name: "endDate", Type: "date", Label: "End Date"},
-			{Name: "isCurrent", Type: "boolean", Label: "Current"},
-			{Name: "sortOrder", Type: "number", Label: "Sort Order"},
-			{Name: "active", Type: "boolean", Label: "Active"},
-			{Name: "technologies", Type: "tags", Label: "Technologies", TableHidden: true},
-			{Name: "translations", Type: "translation", Label: "Translations", TableHidden: true, TranslationFields: []subField{
-				{Name: "role", Label: "Role", Type: "text"},
-				{Name: "summary", Label: "Summary", Type: "textarea"},
-			}},
-			{Name: "createdAt", Type: "date", Label: "Created", Readonly: true, EditHidden: true, CreateHidden: true},
-			{Name: "updatedAt", Type: "date", Label: "Updated", Readonly: true, EditHidden: true, CreateHidden: true},
-		},
-	}
-}
-
-func educationSchema() schema {
-	return schema{
-		Name:        "about-education",
-		DisplayName: "About Education",
-		Searchable:  []string{"institution", "location", "active"},
-		Fields: []field{
-			{Name: "id", Type: "number", Label: "ID", Readonly: true, EditHidden: true, CreateHidden: true},
-			{Name: "institution", Type: "string", Label: "Institution", Required: true},
-			{Name: "location", Type: "string", Label: "Location"},
-			{Name: "startDate", Type: "date", Label: "Start Date", Required: true},
-			{Name: "endDate", Type: "date", Label: "End Date"},
-			{Name: "isCurrent", Type: "boolean", Label: "Current"},
-			{Name: "sortOrder", Type: "number", Label: "Sort Order"},
-			{Name: "active", Type: "boolean", Label: "Active"},
-			{Name: "translations", Type: "translation", Label: "Translations", TableHidden: true, TranslationFields: []subField{
-				{Name: "title", Label: "Title", Type: "text"},
-				{Name: "summary", Label: "Summary", Type: "textarea"},
-			}},
-			{Name: "createdAt", Type: "date", Label: "Created", Readonly: true, EditHidden: true, CreateHidden: true},
-			{Name: "updatedAt", Type: "date", Label: "Updated", Readonly: true, EditHidden: true, CreateHidden: true},
-		},
-	}
-}
-
-func skillSchema() schema {
-	return schema{
-		Name:        "about-skills",
-		DisplayName: "About Skills",
-		Searchable:  []string{"key", "category", "level", "active"},
-		Fields: []field{
-			{Name: "id", Type: "number", Label: "ID", Readonly: true, EditHidden: true, CreateHidden: true},
-			{Name: "key", Type: "string", Label: "Key", Required: true},
-			{Name: "category", Type: "string", Label: "Category", Required: true},
-			{Name: "level", Type: "string", Label: "Level", Required: true},
-			{Name: "sortOrder", Type: "number", Label: "Sort Order"},
-			{Name: "active", Type: "boolean", Label: "Active"},
-			{Name: "translations", Type: "translation", Label: "Translations", TableHidden: true, TranslationFields: []subField{
-				{Name: "name", Label: "Name", Type: "text"},
-				{Name: "summary", Label: "Summary", Type: "textarea"},
-			}},
-			{Name: "createdAt", Type: "date", Label: "Created", Readonly: true, EditHidden: true, CreateHidden: true},
-			{Name: "updatedAt", Type: "date", Label: "Updated", Readonly: true, EditHidden: true, CreateHidden: true},
-		},
-	}
-}
-
-func interestSchema() schema {
-	return schema{
-		Name:        "about-interests",
-		DisplayName: "About Interests",
-		Searchable:  []string{"key", "active"},
-		Fields: []field{
-			{Name: "id", Type: "number", Label: "ID", Readonly: true, EditHidden: true, CreateHidden: true},
-			{Name: "key", Type: "string", Label: "Key", Required: true},
-			{Name: "sortOrder", Type: "number", Label: "Sort Order"},
-			{Name: "active", Type: "boolean", Label: "Active"},
-			{Name: "translations", Type: "translation", Label: "Translations", TableHidden: true, TranslationFields: []subField{
-				{Name: "name", Label: "Name", Type: "text"},
-				{Name: "summary", Label: "Summary", Type: "textarea"},
-			}},
-			{Name: "createdAt", Type: "date", Label: "Created", Readonly: true, EditHidden: true, CreateHidden: true},
-			{Name: "updatedAt", Type: "date", Label: "Updated", Readonly: true, EditHidden: true, CreateHidden: true},
-		},
-	}
 }
