@@ -26,11 +26,14 @@ func New(cfg *config.Config, deps Deps) http.Handler {
 	r.Use(cors(cfg.CORS.AllowOrigins))
 
 	api := r.Group("/api")
-	auth := api.Group("/auth")
-	auth.GET("/me", jwtAuth(cfg.Auth.JWTSecret), getMe(deps.AuthClient))
+	groups := RouteGroups{
+		API:           api,
+		Auth:          api.Group("/auth"),
+		AuthProtected: api.Group("/auth", jwtAuth(cfg.Auth.JWTSecret)),
+		Admin:         api.Group("/admin", jwtAuth(cfg.Auth.JWTSecret), requireAdmin()),
+	}
 
-	admin := api.Group("/admin", jwtAuth(cfg.Auth.JWTSecret), requireAdmin())
-	registerModules(api, admin, newAboutRoutes(deps.About))
+	registerRoutes(groups, newAboutRoutes(deps.About), newAuthRoutes(deps.AuthClient))
 
 	r.NoRoute(gin.WrapH(deps.Gateway))
 	r.NoMethod(gin.WrapH(deps.Gateway))

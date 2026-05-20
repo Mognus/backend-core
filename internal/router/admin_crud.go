@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"template/internal/about"
-
 	"github.com/Mognus/go-grpc-crud/dbcrud"
 	"github.com/gin-gonic/gin"
 )
@@ -19,41 +17,6 @@ type adminResource[T any] struct {
 	create func(context.Context, *T) (*T, error)
 	save   func(context.Context, uint64, *T) (*T, error)
 	delete func(context.Context, uint64) error
-}
-
-func registerAboutAdminRoutes(group *gin.RouterGroup, service *about.Service) {
-	registerAdminResource(group, adminResource[about.Experience]{
-		path:   "about-experiences",
-		list:   service.ListExperiences,
-		get:    service.GetExperience,
-		create: service.CreateExperience,
-		save:   service.SaveExperience,
-		delete: service.DeleteExperience,
-	})
-	registerAdminResource(group, adminResource[about.Education]{
-		path:   "about-education",
-		list:   service.ListEducation,
-		get:    service.GetEducation,
-		create: service.CreateEducation,
-		save:   service.SaveEducation,
-		delete: service.DeleteEducation,
-	})
-	registerAdminResource(group, adminResource[about.Skill]{
-		path:   "about-skills",
-		list:   service.ListSkills,
-		get:    service.GetSkill,
-		create: service.CreateSkill,
-		save:   service.SaveSkill,
-		delete: service.DeleteSkill,
-	})
-	registerAdminResource(group, adminResource[about.Interest]{
-		path:   "about-interests",
-		list:   service.ListInterests,
-		get:    service.GetInterest,
-		create: service.CreateInterest,
-		save:   service.SaveInterest,
-		delete: service.DeleteInterest,
-	})
 }
 
 func registerAdminResource[T any](group *gin.RouterGroup, res adminResource[T]) {
