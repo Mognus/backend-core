@@ -13,9 +13,16 @@ import (
 )
 
 type Deps struct {
-	Gateway    http.Handler
-	AuthClient authv1.AuthServiceClient
-	About      *about.Service
+	Services Services
+	Clients  Clients
+}
+
+type Services struct {
+	About *about.Service
+}
+
+type Clients struct {
+	Auth authv1.AuthServiceClient
 }
 
 func New(cfg *config.Config, deps Deps) http.Handler {
@@ -33,10 +40,7 @@ func New(cfg *config.Config, deps Deps) http.Handler {
 		Admin:         api.Group("/admin", jwtAuth(cfg.Auth.JWTSecret), requireAdmin()),
 	}
 
-	registerRoutes(groups, newAboutRoutes(deps.About), newAuthRoutes(deps.AuthClient))
-
-	r.NoRoute(gin.WrapH(deps.Gateway))
-	r.NoMethod(gin.WrapH(deps.Gateway))
+	registerRoutes(groups, newAboutRoutes(deps.Services.About), newAuthRoutes(deps.Clients.Auth))
 
 	return r
 }

@@ -1,13 +1,12 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net/http"
 
 	"template/internal/about"
+	"template/internal/authclient"
 	"template/internal/config"
-	"template/internal/gateway"
 	"template/internal/platform/db"
 	"template/internal/router"
 
@@ -21,8 +20,6 @@ func main() {
 		log.Fatalf("load config: %v", err)
 	}
 
-	ctx := context.Background()
-
 	database, err := db.Connect(cfg.Database)
 	if err != nil {
 		log.Fatalf("connect database: %v", err)
@@ -33,15 +30,19 @@ func main() {
 	}
 	defer sqlDB.Close()
 
-	gw, err := gateway.New(ctx, cfg)
+	authClient, err := authclient.New(cfg.Auth.ServiceAddr)
 	if err != nil {
-		log.Fatalf("setup gateway: %v", err)
+		log.Fatalf("setup auth client: %v", err)
 	}
-	defer gw.Close()
+	defer authClient.Close()
+
 	handler := router.New(cfg, router.Deps{
-		Gateway:    gw.Handler,
-		AuthClient: gw.AuthClient,
-		About:      about.NewService(database),
+		Services: router.Services{
+			About: about.NewService(database),
+		},
+		Clients: router.Clients{
+			Auth: authClient.Auth,
+		},
 	})
 
 	addr := cfg.Server.Host + ":" + cfg.Server.Port
